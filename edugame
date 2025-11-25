@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Racer | Learning Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff6b35;
+            --secondary: #f7931e;
+            --accent: #00a8ff;
+            --dark: #2d3436;
+            --light: #f8f9fa;
+            --success: #00b894;
+            --warning: #fdcb6e;
+            --error: #e17055;
+            --road: #2d3436;
+            --grass: #00b894;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideDown 0.8s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            height: 600px;
+        }
+
+        .race-track {
+            background: var(--grass);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .road {
+            position: absolute;
+            top: 0;
+            left: 25%;
+            width: 50%;
+            height: 100%;
+            background: var(--road);
+        }
+
+        .road-lines {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                white,
+                white 20px,
+                transparent 20px,
+                transparent 40px
+            );
+        }
+
+        .player-car {
+            position: absolute;
+            bottom: 50px;
+            left: 35%;
+            width: 60px;
+            height: 100px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 10px 10px 0 0;
+            transform: translateX(-50%);
+            transition: left 0.1s ease;
+            z-index: 10;
+        }
+
+        .player-car::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 5px;
+            right: 5px;
+            height: 30px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+
+        .player-car::after {
+            content: '🏎️';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+        }
+
+        .obstacle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: var(--error);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: fall linear;
+        }
+
+        @keyframes fall {
+            from { top: -50px; }
+            to { top: 100%; }
+        }
+
+        .game-controls {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .math-problem {
+            background: white;
+            color: var(--dark);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .problem-text {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 3px solid var(--primary);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,168,255,0.3);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .power-ups {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .power-up {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .power-up:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--accent);
+        }
+
+        .power-up.active {
+            background: var(--accent);
+            border-color: white;
+        }
+
+        .power-up-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: var(--dark);
+            max-width: 500px;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .final-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        .achievements {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .achievement {
+            background: var(--warning);
+            color: var(--dark);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .mobile-controls {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .mobile-btn {
+            padding: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            font-size: 1.5rem;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .game-controls {
+                order: -1;
+            }
+            
+            .mobile-controls {
+                display: grid;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .road {
+                left: 15%;
+                width: 70%;
+            }
+        }
+
+        .speed-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent 50%, rgba(255,255,255,0.1) 50%);
+            background-size: 100% 4px;
+            animation: speedLines 0.1s linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes speedLines {
+            from { background-position: 0 0; }
+            to { background-position: 0 4px; }
+        }
+
+        .boost-active .speed-effect {
+            opacity: 1;
+        }
+
+        .correct-answer {
+            animation: correctFlash 0.5s ease;
+        }
+
+        @keyframes correctFlash {
+            0%, 100% { background: white; }
+            50% { background: var(--success); color: white; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header class="header">
+            <h1>🏁 MATH RACER 🏁</h1>
+            <p class="tagline">Solve math problems to speed up your car and avoid obstacles!</p>
+            
+            <div class="game-stats">
+                <div class="stat">
+                    <div class="stat-number" id="score">0</div>
+                    <div>SCORE</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="speed">0</div>
+                    <div>SPEED</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="lives">3</div>
+                    <div>LIVES</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="level">1</div>
+                    <div>LEVEL</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="game-area">
+            <div class="race-track">
+                <div class="road">
+                    <div class="road-lines"></div>
+                    <div class="player-car" id="playerCar"></div>
+                    <div class="speed-effect"></div>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <div class="math-problem">
+                    <div class="problem-text" id="problem">5 + 3 = ?</div>
+                    <input type="number" class="answer-input" id="answerInput" placeholder="Enter answer" autofocus>
+                    <button class="btn btn-primary" onclick="checkAnswer()">
+                        <i class="fas fa-check"></i> SUBMIT ANSWER
+                    </button>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-secondary" onclick="moveLeft()">
+                        <i class="fas fa-arrow-left"></i> LEFT
+                    </button>
+                    <button class="btn btn-secondary" onclick="moveRight()">
+                        RIGHT <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="power-ups">
+                    <div class="power-up" onclick="activatePowerUp('speed')">
+                        <div class="power-up-icon">🚀</div>
+                        <div>SPEED BOOST</div>
+                        <small id="speedBoostCount">3</small>
+                    </div>
+                    <div class="power-up" onclick="activatePowerUp('shield')">
+                        <div class="power-up-icon">🛡️</div>
+                        <div>SHIELD</div>
+                        <small id="shieldCount">2</small>
+                    </div>
+                    <div class="power-up" onclick="activatePowerUp('slow')">
+                        <div class="power-up-icon">🐢</div>
+                        <div>SLOW TIME</div>
+                        <small id="slowCount">1</small>
+                    </div>
+                </div>
+
+                <div class="mobile-controls">
+                    <div class="mobile-btn" ontouchstart="moveLeft()" ontouchend="clearMove()">⬅️ LEFT</div>
+                    <div class="mobile-btn" ontouchstart="moveRight()" ontouchend="clearMove()">RIGHT ➡️</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2>GAME OVER!</h2>
+            <div class="final-score" id="finalScore">0</div>
+            <p>You crashed too many times!</p>
+            
+            <div class="achievements">
+                <div class="achievement" id="mathMaster">MATH MASTER</div>
+                <div class="achievement" id="speedDemon">SPEED DEMON</div>
+                <div class="achievement" id="survivor">SURVIVOR</div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="restartGame()" style="margin-top: 20px;">
+                <i class="fas fa-redo"></i> PLAY AGAIN
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            score: 0,
+            speed: 0,
+            lives: 3,
+            level: 1,
+            position: 35, // percentage
+            isMoving: false,
+            moveDirection: 0,
+            obstacles: [],
+            powerUps: {
+                speed: 3,
+                shield: 2,
+                slow: 1
+            },
+            activePowerUp: null,
+            gameActive: true
+        };
+
+        // DOM Elements
+        const playerCar = document.getElementById('playerCar');
+        const problemElement = document.getElementById('problem');
+        const answerInput = document.getElementById('answerInput');
+        const scoreElement = document.getElementById('score');
+        const speedElement = document.getElementById('speed');
+        const livesElement = document.getElementById('lives');
+        const levelElement = document.getElementById('level');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        // Math Problem Generator
+        function generateProblem() {
+            const operations = ['+', '-', '×', '÷'];
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            let a, b, answer;
+
+            switch(operation) {
+                case '+':
+                    a = Math.floor(Math.random() * 20) + 1;
+                    b = Math.floor(Math.random() * 20) + 1;
+                    answer = a + b;
+                    break;
+                case '-':
+                    a = Math.floor(Math.random() * 20) + 10;
+                    b = Math.floor(Math.random() * 10) + 1;
+                    answer = a - b;
+                    break;
+                case '×':
+                    a = Math.floor(Math.random() * 10) + 1;
+                    b = Math.floor(Math.random() * 10) + 1;
+                    answer = a * b;
+                    break;
+                case '÷':
+                    b = Math.floor(Math.random() * 8) + 2;
+                    answer = Math.floor(Math.random() * 8) + 2;
+                    a = b * answer;
+                    break;
+            }
+
+            return {
+                problem: `${a} ${operation} ${b} = ?`,
+                answer: answer
+            };
+        }
+
+        let currentProblem = generateProblem();
+        problemElement.textContent = currentProblem.problem;
+
+        // Game Functions
+        function checkAnswer() {
+            const userAnswer = parseInt(answerInput.value);
+            
+            if (userAnswer === currentProblem.answer) {
+                // Correct answer
+                gameState.speed = Math.min(gameState.speed + 2, 20);
+                gameState.score += 10 * gameState.level;
+                
+                // Visual feedback
+                document.querySelector('.math-problem').classList.add('correct-answer');
+                setTimeout(() => {
+                    document.querySelector('.math-problem').classList.remove('correct-answer');
+                }, 500);
+                
+                // Generate new problem
+                currentProblem = generateProblem();
+                problemElement.textContent = currentProblem.problem;
+                answerInput.value = '';
+                
+                updateDisplay();
+            } else {
+                // Wrong answer - slow down
+                gameState.speed = Math.max(gameState.speed - 1, 0);
+                answerInput.value = '';
+                answerInput.focus();
+                updateDisplay();
+            }
+        }
+
+        function moveLeft() {
+            gameState.position = Math.max(gameState.position - 10, 15);
+            updateCarPosition();
+        }
+
+        function moveRight() {
+            gameState.position = Math.min(gameState.position + 10, 65);
+            updateCarPosition();
+        }
+
+        function clearMove() {
+            // For mobile touch controls
+        }
+
+        function updateCarPosition() {
+            playerCar.style.left = `${gameState.position}%`;
+        }
+
+        function activatePowerUp(type) {
+            if (gameState.powerUps[type] > 0 && !gameState.activePowerUp) {
+                gameState.powerUps[type]--;
+                gameState.activePowerUp = type;
+                
+                document.getElementById(`${type}Count`).textContent = gameState.powerUps[type];
+                
+                switch(type) {
+                    case 'speed':
+                        gameState.speed += 5;
+                        document.querySelector('.race-track').classList.add('boost-active');
+                        setTimeout(() => {
+                            document.querySelector('.race-track').classList.remove('boost-active');
+                            gameState.activePowerUp = null;
+                        }, 3000);
+                        break;
+                    case 'shield':
+                        // Shield logic would go here
+                        setTimeout(() => {
+                            gameState.activePowerUp = null;
+                        }, 5000);
+                        break;
+                    case 'slow':
+                        // Slow time logic would go here
+                        setTimeout(() => {
+                            gameState.activePowerUp = null;
+                        }, 4000);
+                        break;
+                }
+                
+                updateDisplay();
+            }
+        }
+
+        function createObstacle() {
+            if (!gameState.gameActive) return;
+            
+            const obstacle = document.createElement('div');
+            obstacle.className = 'obstacle';
+            obstacle.style.left = `${15 + Math.random() * 60}%`;
+            obstacle.textContent = Math.floor(Math.random() * 10) + 1;
+            
+            const duration = Math.max(3000 - (gameState.speed * 100), 1000);
+            obstacle.style.animationDuration = `${duration}ms`;
+            
+            document.querySelector('.road').appendChild(obstacle);
+            gameState.obstacles.push(obstacle);
+            
+            // Remove obstacle after animation
+            setTimeout(() => {
+                if (obstacle.parentNode) {
+                    obstacle.parentNode.removeChild(obstacle);
+                    gameState.obstacles = gameState.obstacles.filter(obs => obs !== obstacle);
+                    
+                    // Score for avoiding obstacle
+                    gameState.score += 5;
+                    updateDisplay();
+                }
+            }, duration);
+        }
+
+        function checkCollisions() {
+            const carRect = playerCar.getBoundingClientRect();
+            
+            gameState.obstacles.forEach(obstacle => {
+                const obstacleRect = obstacle.getBoundingClientRect();
+                
+                if (carRect.left < obstacleRect.right &&
+                    carRect.right > obstacleRect.left &&
+                    carRect.top < obstacleRect.bottom &&
+                    carRect.bottom > obstacleRect.top) {
+                    
+                    // Collision detected
+                    if (gameState.activePowerUp !== 'shield') {
+                        gameState.lives--;
+                        updateDisplay();
+                        
+                        if (gameState.lives <= 0) {
+                            endGame();
+                        }
+                    }
+                    
+                    // Remove obstacle
+                    obstacle.parentNode.removeChild(obstacle);
+                    gameState.obstacles = gameState.obstacles.filter(obs => obs !== obstacle);
+                }
+            });
+        }
+
+        function updateDisplay() {
+            scoreElement.textContent = gameState.score;
+            speedElement.textContent = gameState.speed;
+            livesElement.textContent = gameState.lives;
+            levelElement.textContent = gameState.level;
+        }
+
+        function endGame() {
+            gameState.gameActive = false;
+            finalScoreElement.textContent = gameState.score;
+            
+            // Check achievements
+            if (gameState.score > 500) {
+                document.getElementById('mathMaster').style.display = 'block';
+            }
+            if (gameState.speed > 15) {
+                document.getElementById('speedDemon').style.display = 'block';
+            }
+            if (gameState.level > 5) {
+                document.getElementById('survivor').style.display = 'block';
+            }
+            
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function restartGame() {
+            gameState.score = 0;
+            gameState.speed = 0;
+            gameState.lives = 3;
+            gameState.level = 1;
+            gameState.position = 35;
+            gameState.obstacles = [];
+            gameState.powerUps = { speed: 3, shield: 2, slow: 1 };
+            gameState.activePowerUp = null;
+            gameState.gameActive = true;
+            
+            // Reset power up counts
+            document.getElementById('speedBoostCount').textContent = '3';
+            document.getElementById('shieldCount').textContent = '2';
+            document.getElementById('slowCount').textContent = '1';
+            
+            // Clear obstacles
+            document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+            gameState.obstacles = [];
+            
+            updateDisplay();
+            updateCarPosition();
+            gameOverScreen.style.display = 'none';
+            
+            // Generate new problem
+            currentProblem = generateProblem();
+            problemElement.textContent = currentProblem.problem;
+            answerInput.value = '';
+            answerInput.focus();
+        }
+
+        // Keyboard Controls
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.gameActive) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    moveRight();
+                    break;
+                case 'Enter':
+                    checkAnswer();
+                    break;
+                case '1':
+                    activatePowerUp('speed');
+                    break;
+                case '2':
+                    activatePowerUp('shield');
+                    break;
+                case '3':
+                    activatePowerUp('slow');
+                    break;
+            }
+        });
+
+        // Game Loop
+        function gameLoop() {
+            if (gameState.gameActive) {
+                checkCollisions();
+                
+                // Level progression
+                if (gameState.score >= gameState.level * 100) {
+                    gameState.level++;
+                    updateDisplay();
+                }
+                
+                // Increase obstacle frequency with speed
+                if (Math.random() < 0.02 + (gameState.speed * 0.002)) {
+                    createObstacle();
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize game
+        updateDisplay();
+        updateCarPosition();
+        gameLoop();
+
+        // Focus input on load
+        answerInput.focus();
+    </script>
+</body>
+</html>

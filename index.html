@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turbo Racer | Extreme Racing</title>
+    <title>Turbo Racer | Jump & Drive</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -104,15 +104,17 @@
             height: 100%;
             background: var(--grass);
             overflow: hidden;
+            perspective: 1000px;
         }
 
-        .road {
+        .scrolling-road {
             position: absolute;
             top: 0;
             left: 25%;
             width: 50%;
-            height: 100%;
+            height: 400%;
             background: var(--road);
+            transform-origin: top center;
         }
 
         .road-lines {
@@ -121,7 +123,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: 6px;
-            height: 200%;
+            height: 100%;
             background: repeating-linear-gradient(
                 to bottom,
                 white,
@@ -129,17 +131,11 @@
                 transparent 30px,
                 transparent 60px
             );
-            animation: roadMove 2s linear infinite;
-        }
-
-        @keyframes roadMove {
-            from { transform: translateX(-50%) translateY(0); }
-            to { transform: translateX(-50%) translateY(-60px); }
         }
 
         .player-car {
             position: absolute;
-            bottom: 80px;
+            bottom: 100px;
             left: 35%;
             width: 80px;
             height: 160px;
@@ -149,6 +145,16 @@
             transition: left 0.08s ease;
             z-index: 20;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .player-car.jumping {
+            animation: jump 1s ease-in-out;
+        }
+
+        @keyframes jump {
+            0% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-120px); }
+            100% { transform: translateX(-50%) translateY(0); }
         }
 
         .player-car::before {
@@ -193,7 +199,6 @@
             font-size: 24px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
             z-index: 10;
-            animation: fall linear;
         }
 
         .obstacle.car {
@@ -206,12 +211,11 @@
 
         .obstacle.coin {
             background: linear-gradient(45deg, #ffa502, #ffb142);
-            animation: fall linear, rotate 2s linear infinite;
+            animation: rotate 2s linear infinite;
         }
 
-        @keyframes fall {
-            from { top: -100px; }
-            to { top: 100%; }
+        .obstacle.jumpable {
+            background: linear-gradient(45deg, #00d2d3, #54a0ff);
         }
 
         @keyframes rotate {
@@ -305,17 +309,17 @@
 
         .mobile-controls {
             display: none;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
             margin-top: auto;
         }
 
         .mobile-btn {
-            padding: 25px;
+            padding: 20px;
             background: rgba(255,255,255,0.2);
             border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 20px;
-            font-size: 1.8rem;
+            border-radius: 15px;
+            font-size: 1.5rem;
             color: white;
             cursor: pointer;
             user-select: none;
@@ -359,16 +363,12 @@
             text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
         }
 
-        .boost-active .road-lines {
-            animation-duration: 0.8s;
+        .boost-active .scrolling-road {
+            animation-duration: 0.8s !important;
         }
 
         .shield-active .player-car {
             box-shadow: 0 0 30px #00a8ff;
-        }
-
-        .slow-active .obstacle {
-            animation-duration: 4s !important;
         }
 
         .explosion {
@@ -384,37 +384,6 @@
         @keyframes explode {
             0% { transform: scale(0); opacity: 1; }
             100% { transform: scale(3); opacity: 0; }
-        }
-
-        @media (max-width: 768px) {
-            .game-area {
-                grid-template-columns: 1fr;
-                grid-template-rows: 1fr auto;
-            }
-            
-            .controls-sidebar {
-                order: -1;
-                padding: 15px;
-            }
-            
-            .mobile-controls {
-                display: grid;
-            }
-            
-            h1 {
-                font-size: 2.5rem;
-            }
-            
-            .road {
-                left: 15%;
-                width: 70%;
-            }
-            
-            .player-car {
-                width: 60px;
-                height: 120px;
-                bottom: 60px;
-            }
         }
 
         .speed-effect {
@@ -437,6 +406,56 @@
 
         .boost-active .speed-effect {
             opacity: 0.6;
+        }
+
+        .environment {
+            position: absolute;
+            z-index: 5;
+        }
+
+        .tree {
+            width: 40px;
+            height: 80px;
+            background: linear-gradient(45deg, #00b894, #00a085);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .building {
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(45deg, #636e72, #2d3436);
+            border-radius: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            
+            .controls-sidebar {
+                order: -1;
+                padding: 15px;
+            }
+            
+            .mobile-controls {
+                display: grid;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .scrolling-road {
+                left: 15%;
+                width: 70%;
+            }
+            
+            .player-car {
+                width: 60px;
+                height: 120px;
+                bottom: 80px;
+            }
         }
     </style>
 </head>
@@ -468,12 +487,12 @@
         <div class="game-area">
             <div class="race-track-container">
                 <div class="race-track" id="raceTrack">
-                    <div class="road">
+                    <div class="scrolling-road" id="scrollingRoad">
                         <div class="road-lines"></div>
-                        <div class="player-car" id="playerCar">
-                            <div class="car-window"></div>
-                        </div>
                         <div class="speed-effect"></div>
+                    </div>
+                    <div class="player-car" id="playerCar">
+                        <div class="car-window"></div>
                     </div>
                 </div>
             </div>
@@ -487,6 +506,12 @@
                     </button>
                     <button class="btn" onclick="moveRight()">
                         RIGHT <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn" onclick="jump()" style="grid-column: 1 / -1; background: linear-gradient(45deg, #00d2d3, #54a0ff);">
+                        <i class="fas fa-arrow-up"></i> JUMP
                     </button>
                 </div>
 
@@ -505,16 +530,11 @@
                         <small>Invincible for 5 seconds</small>
                         <div id="shieldCount">2</div>
                     </div>
-                    <div class="power-up" onclick="activatePowerUp('slow')">
-                        <div class="power-up-icon">⏰</div>
-                        <div>TIME WARP</div>
-                        <small>Slow time for 4 seconds</small>
-                        <div id="slowCount">1</div>
-                    </div>
                 </div>
 
                 <div class="mobile-controls">
                     <div class="mobile-btn" ontouchstart="moveLeft()" ontouchend="clearMove()">⬅️</div>
+                    <div class="mobile-btn" ontouchstart="jump()">🔼 JUMP</div>
                     <div class="mobile-btn" ontouchstart="moveRight()" ontouchend="clearMove()">➡️</div>
                 </div>
             </div>
@@ -537,27 +557,27 @@
         // Game State
         const gameState = {
             score: 0,
-            speed: 0,
+            speed: 100,
             distance: 0,
             lives: 3,
             position: 35,
-            isMoving: false,
-            moveDirection: 0,
+            isJumping: false,
             obstacles: [],
             coins: 0,
             powerUps: {
                 speed: 3,
-                shield: 2,
-                slow: 1
+                shield: 2
             },
             activePowerUp: null,
             gameActive: true,
-            keys: {}
+            keys: {},
+            roadPosition: 0,
+            environment: []
         };
 
         // DOM Elements
         const playerCar = document.getElementById('playerCar');
-        const raceTrack = document.getElementById('raceTrack');
+        const scrollingRoad = document.getElementById('scrollingRoad');
         const scoreElement = document.getElementById('score');
         const speedElement = document.getElementById('speed');
         const distanceElement = document.getElementById('distance');
@@ -577,12 +597,29 @@
             updateCarPosition();
         }
 
+        function jump() {
+            if (!gameState.isJumping) {
+                gameState.isJumping = true;
+                playerCar.classList.add('jumping');
+                setTimeout(() => {
+                    playerCar.classList.remove('jumping');
+                    gameState.isJumping = false;
+                }, 1000);
+            }
+        }
+
         function clearMove() {
             // For mobile touch controls
         }
 
         function updateCarPosition() {
             playerCar.style.left = `${gameState.position}%`;
+        }
+
+        function updateRoadScroll() {
+            const scrollSpeed = gameState.speed * 0.5;
+            gameState.roadPosition += scrollSpeed;
+            scrollingRoad.style.transform = `translateY(-${gameState.roadPosition}px)`;
         }
 
         function activatePowerUp(type) {
@@ -594,25 +631,21 @@
                 
                 switch(type) {
                     case 'speed':
-                        raceTrack.classList.add('boost-active');
+                        const originalSpeed = gameState.speed;
+                        gameState.speed *= 3;
+                        document.getElementById('raceTrack').classList.add('boost-active');
                         setTimeout(() => {
-                            raceTrack.classList.remove('boost-active');
+                            document.getElementById('raceTrack').classList.remove('boost-active');
+                            gameState.speed = originalSpeed;
                             gameState.activePowerUp = null;
                         }, 3000);
                         break;
                     case 'shield':
-                        raceTrack.classList.add('shield-active');
+                        document.getElementById('raceTrack').classList.add('shield-active');
                         setTimeout(() => {
-                            raceTrack.classList.remove('shield-active');
+                            document.getElementById('raceTrack').classList.remove('shield-active');
                             gameState.activePowerUp = null;
                         }, 5000);
-                        break;
-                    case 'slow':
-                        raceTrack.classList.add('slow-active');
-                        setTimeout(() => {
-                            raceTrack.classList.remove('slow-active');
-                            gameState.activePowerUp = null;
-                        }, 4000);
                         break;
                 }
             }
@@ -621,12 +654,13 @@
         function createObstacle() {
             if (!gameState.gameActive) return;
             
-            const obstacleTypes = ['car', 'rock', 'coin'];
+            const obstacleTypes = ['car', 'rock', 'coin', 'jumpable'];
             const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
             
             const obstacle = document.createElement('div');
             obstacle.className = `obstacle ${type}`;
             obstacle.style.left = `${15 + Math.random() * 60}%`;
+            obstacle.style.bottom = type === 'jumpable' ? '50px' : '100px';
             
             // Different appearances for different types
             switch(type) {
@@ -642,58 +676,81 @@
                     obstacle.textContent = '💰';
                     obstacle.style.background = 'linear-gradient(45deg, #ffa502, #ffb142)';
                     break;
+                case 'jumpable':
+                    obstacle.textContent = '🚧';
+                    obstacle.style.background = 'linear-gradient(45deg, #00d2d3, #54a0ff)';
+                    obstacle.style.height = '40px';
+                    obstacle.style.width = '120px';
+                    break;
             }
             
-            const baseSpeed = Math.max(2000 - (gameState.speed * 50), 800);
-            const duration = type === 'coin' ? baseSpeed * 1.5 : baseSpeed;
-            obstacle.style.animationDuration = `${duration}ms`;
-            
-            raceTrack.appendChild(obstacle);
-            gameState.obstacles.push({element: obstacle, type: type});
-            
-            // Remove obstacle after animation
-            setTimeout(() => {
-                if (obstacle.parentNode) {
-                    obstacle.parentNode.removeChild(obstacle);
-                    gameState.obstacles = gameState.obstacles.filter(obs => obs.element !== obstacle);
+            document.getElementById('raceTrack').appendChild(obstacle);
+            gameState.obstacles.push({
+                element: obstacle, 
+                type: type,
+                x: parseFloat(obstacle.style.left),
+                y: parseFloat(obstacle.style.bottom)
+            });
+        }
+
+        function updateObstacles() {
+            gameState.obstacles.forEach((obstacleObj, index) => {
+                const obstacle = obstacleObj.element;
+                
+                // Move obstacles toward the car (simulating forward movement)
+                obstacleObj.y -= gameState.speed * 0.5;
+                obstacle.style.bottom = `${obstacleObj.y}px`;
+                
+                // Remove obstacles that are behind the car
+                if (obstacleObj.y < -100) {
+                    obstacle.remove();
+                    gameState.obstacles.splice(index, 1);
+                    
+                    // Score for passing obstacles
+                    if (obstacleObj.type !== 'coin') {
+                        gameState.score += 10;
+                    }
                 }
-            }, duration);
+            });
         }
 
         function checkCollisions() {
-            if (!gameState.gameActive) return;
+            if (!gameState.gameActive || gameState.isJumping) return;
             
             const carRect = playerCar.getBoundingClientRect();
             
-            gameState.obstacles.forEach(obstacleObj => {
+            gameState.obstacles.forEach((obstacleObj, index) => {
                 const obstacle = obstacleObj.element;
                 const obstacleRect = obstacle.getBoundingClientRect();
                 
-                if (carRect.left < obstacleRect.right &&
-                    carRect.right > obstacleRect.left &&
-                    carRect.top < obstacleRect.bottom &&
-                    carRect.bottom > obstacleRect.top) {
-                    
-                    if (obstacleObj.type === 'coin') {
-                        // Collect coin
-                        gameState.score += 50;
-                        gameState.coins++;
-                        createExplosion(obstacleRect.left + 35, obstacleRect.top + 35, 'gold');
-                    } else if (gameState.activePowerUp !== 'shield') {
-                        // Collision with obstacle
-                        gameState.lives--;
-                        createExplosion(carRect.left + 40, carRect.top + 40, 'red');
+                // Only check collisions with obstacles near the car's position
+                if (Math.abs(obstacleRect.bottom - carRect.top) < 50) {
+                    if (carRect.left < obstacleRect.right &&
+                        carRect.right > obstacleRect.left &&
+                        carRect.top < obstacleRect.bottom &&
+                        carRect.bottom > obstacleRect.top) {
                         
-                        if (gameState.lives <= 0) {
-                            endGame();
+                        if (obstacleObj.type === 'coin') {
+                            // Collect coin
+                            gameState.score += 50;
+                            gameState.coins++;
+                            createExplosion(obstacleRect.left + 35, obstacleRect.top + 35, 'gold');
+                        } else if (gameState.activePowerUp !== 'shield') {
+                            // Collision with obstacle
+                            gameState.lives--;
+                            createExplosion(carRect.left + 40, carRect.top + 40, 'red');
+                            
+                            if (gameState.lives <= 0) {
+                                endGame();
+                            }
                         }
+                        
+                        // Remove obstacle
+                        obstacle.remove();
+                        gameState.obstacles.splice(index, 1);
+                        
+                        updateDisplay();
                     }
-                    
-                    // Remove obstacle
-                    obstacle.parentNode.removeChild(obstacle);
-                    gameState.obstacles = gameState.obstacles.filter(obs => obs.element !== obstacle);
-                    
-                    updateDisplay();
                 }
             });
         }
@@ -718,7 +775,7 @@
 
         function updateDisplay() {
             scoreElement.textContent = gameState.score;
-            speedElement.textContent = gameState.speed;
+            speedElement.textContent = Math.floor(gameState.speed);
             distanceElement.textContent = Math.floor(gameState.distance);
             livesElement.textContent = gameState.lives;
         }
@@ -732,30 +789,33 @@
 
         function restartGame() {
             gameState.score = 0;
-            gameState.speed = 5;
+            gameState.speed = 100;
             gameState.distance = 0;
             gameState.lives = 3;
             gameState.position = 35;
             gameState.obstacles = [];
             gameState.coins = 0;
-            gameState.powerUps = { speed: 3, shield: 2, slow: 1 };
+            gameState.powerUps = { speed: 3, shield: 2 };
             gameState.activePowerUp = null;
             gameState.gameActive = true;
+            gameState.roadPosition = 0;
+            gameState.isJumping = false;
             
             // Reset power up counts
             document.getElementById('speedBoostCount').textContent = '3';
             document.getElementById('shieldCount').textContent = '2';
-            document.getElementById('slowCount').textContent = '1';
             
             // Clear obstacles
             document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
             gameState.obstacles = [];
             
             // Reset visual effects
-            raceTrack.classList.remove('boost-active', 'shield-active', 'slow-active');
+            document.getElementById('raceTrack').classList.remove('boost-active', 'shield-active');
+            playerCar.classList.remove('jumping');
             
             updateDisplay();
             updateCarPosition();
+            scrollingRoad.style.transform = 'translateY(0)';
             gameOverScreen.style.display = 'none';
         }
 
@@ -776,10 +836,14 @@
             if (gameState.keys['ArrowRight'] || gameState.keys['d']) {
                 moveRight();
             }
-            if (gameState.keys[' ']) { // Space bar for boost
-                if (gameState.powerUps.speed > 0 && !gameState.activePowerUp) {
-                    activatePowerUp('speed');
-                }
+            if (gameState.keys[' '] || gameState.keys['ArrowUp'] || gameState.keys['w']) {
+                jump();
+            }
+            if (gameState.keys['1']) {
+                activatePowerUp('speed');
+            }
+            if (gameState.keys['2']) {
+                activatePowerUp('shield');
             }
         }
 
@@ -787,15 +851,17 @@
         function gameLoop() {
             if (gameState.gameActive) {
                 handleKeyPress();
+                updateRoadScroll();
+                updateObstacles();
                 checkCollisions();
                 
                 // Gradually increase speed and distance
-                gameState.speed = Math.min(gameState.speed + 0.01, 30);
-                gameState.distance += gameState.speed * 0.1;
-                gameState.score += Math.floor(gameState.speed * 0.1);
+                gameState.speed = Math.min(gameState.speed + 0.1, 300);
+                gameState.distance += gameState.speed * 0.01;
+                gameState.score += Math.floor(gameState.speed * 0.01);
                 
                 // Increase obstacle frequency with speed
-                if (Math.random() < 0.03 + (gameState.speed * 0.003)) {
+                if (Math.random() < 0.02 + (gameState.speed * 0.001)) {
                     createObstacle();
                 }
                 
@@ -806,7 +872,6 @@
         }
 
         // Initialize game
-        gameState.speed = 5; // Start with some speed
         updateDisplay();
         updateCarPosition();
         gameLoop();

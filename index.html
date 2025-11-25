@@ -129,19 +129,20 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            perspective: 1000px;
         }
 
-        .track {
+        .scrolling-road {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 25%;
             width: 50%;
-            height: 100%;
+            height: 400%;
             background: #7f8c8d;
-            clip-path: polygon(0% 100%, 10% 80%, 20% 85%, 30% 75%, 40% 82%, 50% 70%, 60% 78%, 70% 65%, 80% 72%, 90% 60%, 100% 100%);
+            transform-origin: top center;
         }
 
-        .track-lines {
+        .road-lines {
             position: absolute;
             top: 0;
             left: 50%;
@@ -159,7 +160,7 @@
 
         .player-car {
             position: absolute;
-            bottom: 50px;
+            bottom: 100px;
             left: 35%;
             width: 70px;
             height: 140px;
@@ -393,6 +394,29 @@
             text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
         }
 
+        .speed-boost {
+            position: absolute;
+            width: 50px;
+            height: 25px;
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            border-radius: 4px;
+            animation: pulse 1s infinite;
+            z-index: 8;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .checkpoint {
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            z-index: 10;
+        }
+
         @media (max-width: 768px) {
             .game-area {
                 grid-template-columns: 1fr;
@@ -418,7 +442,7 @@
                 justify-content: center;
             }
             
-            .track {
+            .scrolling-road {
                 left: 15%;
                 width: 70%;
             }
@@ -426,23 +450,8 @@
             .player-car {
                 width: 50px;
                 height: 100px;
-                bottom: 40px;
+                bottom: 80px;
             }
-        }
-
-        .speed-boost {
-            position: absolute;
-            width: 50px;
-            height: 25px;
-            background: linear-gradient(45deg, #f39c12, #e67e22);
-            border-radius: 4px;
-            animation: pulse 1s infinite;
-            z-index: 8;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -480,8 +489,8 @@
                 <div class="mountain-track" id="mountainTrack">
                     <div class="mountain mountain-1"></div>
                     <div class="mountain mountain-2"></div>
-                    <div class="track">
-                        <div class="track-lines"></div>
+                    <div class="scrolling-road" id="scrollingRoad">
+                        <div class="road-lines"></div>
                         <div class="player-car" id="playerCar"></div>
                     </div>
                 </div>
@@ -515,7 +524,7 @@
                 </div>
 
                 <div style="text-align: center; font-size: 0.9rem; color: #bdc3c7;">
-                    Time: <span id="time">0:00</span>
+                    Time: <span id="time">0:00</span> | Distance: <span id="distance">0</span>m
                 </div>
 
                 <div class="mobile-controls">
@@ -544,6 +553,7 @@
             <h2 style="font-size: 2.5rem; margin-bottom: 15px;">LEVEL COMPLETE! 🏆</h2>
             <div class="final-score" id="completePosition">1st</div>
             <p style="font-size: 1.1rem; margin-bottom: 25px;">Time: <span id="completeTime">0:00</span></p>
+            <p style="font-size: 1.1rem; margin-bottom: 25px;">Distance: <span id="completeDistance">0</span>m</p>
             
             <button class="btn btn-primary" onclick="nextLevel()" style="padding: 15px 30px; font-size: 1.1rem; margin: 8px;">
                 NEXT LEVEL
@@ -559,12 +569,14 @@
         const gameState = {
             currentLevel: 1,
             position: 1,
-            speed: 0,
+            speed: 80,
             lap: 1,
             totalLaps: 3,
             time: 0,
+            distance: 0,
             trackProgress: 0,
             carPosition: 35,
+            roadPosition: 0,
             opponents: [],
             boosts: 3,
             raceStarted: false,
@@ -578,11 +590,12 @@
 
         // DOM Elements
         const playerCar = document.getElementById('playerCar');
-        const mountainTrack = document.getElementById('mountainTrack');
+        const scrollingRoad = document.getElementById('scrollingRoad');
         const positionElement = document.getElementById('position');
         const speedElement = document.getElementById('speed');
         const lapElement = document.getElementById('lap');
         const timeElement = document.getElementById('time');
+        const distanceElement = document.getElementById('distance');
         const trackProgressElement = document.getElementById('trackProgress');
         const levelNameElement = document.getElementById('levelName');
         const levelDescriptionElement = document.getElementById('levelDescription');
@@ -592,6 +605,7 @@
         const finalPositionElement = document.getElementById('finalPosition');
         const completePositionElement = document.getElementById('completePosition');
         const completeTimeElement = document.getElementById('completeTime');
+        const completeDistanceElement = document.getElementById('completeDistance');
 
         // Game Functions
         function selectLevel(level) {
@@ -631,17 +645,32 @@
             playerCar.style.left = `${gameState.carPosition}%`;
         }
 
+        function updateRoadScroll() {
+            // Move the road to simulate forward movement
+            const scrollSpeed = gameState.speed * 0.5;
+            gameState.roadPosition += scrollSpeed;
+            
+            // Loop the road when it reaches the end
+            if (gameState.roadPosition > 1200) {
+                gameState.roadPosition = 0;
+            }
+            
+            scrollingRoad.style.transform = `translateY(-${gameState.roadPosition}px)`;
+        }
+
         function useBoost() {
             if (gameState.boosts > 0 && gameState.raceStarted && !gameState.raceFinished) {
                 gameState.boosts--;
-                gameState.speed = Math.min(gameState.speed + 50, 200);
+                const originalSpeed = gameState.speed;
+                gameState.speed = Math.min(gameState.speed + 60, 200);
                 boostBtn.innerHTML = `<i class="fas fa-bolt"></i> BOOST (${gameState.boosts})`;
                 
                 // Visual boost effect
                 playerCar.style.background = 'linear-gradient(45deg, #f39c12, #e74c3c)';
                 setTimeout(() => {
                     playerCar.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
-                }, 1000);
+                    gameState.speed = originalSpeed;
+                }, 2000);
             }
         }
 
@@ -651,47 +680,56 @@
             for (let i = 0; i < levelInfo.opponentCount; i++) {
                 const opponent = document.createElement('div');
                 opponent.className = 'opponent-car';
-                opponent.style.left = `${20 + (i * 10)}%`;
-                opponent.style.bottom = `${100 + (i * 80)}px`;
+                opponent.style.left = `${20 + (i * 8)}%`;
+                opponent.style.bottom = `${50 + (i * 120)}px`;
                 
-                mountainTrack.appendChild(opponent);
+                document.getElementById('mountainTrack').appendChild(opponent);
                 
                 gameState.opponents.push({
                     element: opponent,
-                    position: 20 + (i * 10),
-                    speed: 60 + (i * 5 * levelInfo.difficulty),
-                    progress: i * 0.1
+                    position: 20 + (i * 8),
+                    speed: 70 + (i * 8 * levelInfo.difficulty),
+                    progress: i * 80,
+                    roadPosition: i * 120
                 });
             }
         }
 
         function updateOpponents() {
             gameState.opponents.forEach(opponent => {
-                // Move opponents based on their speed and difficulty
-                opponent.progress += opponent.speed * 0.0001 * gameState.levels[gameState.currentLevel].difficulty;
+                // Move opponents forward
+                opponent.roadPosition += opponent.speed * 0.5;
                 
-                // Update opponent position on track (simulate winding mountain road)
-                const trackOffset = Math.sin(opponent.progress * 2) * 10;
+                // Loop opponents when they go off screen
+                if (opponent.roadPosition > 1200) {
+                    opponent.roadPosition = -200;
+                    opponent.progress += 1200;
+                }
+                
+                // Update opponent vertical position (scrolling with road)
+                opponent.element.style.bottom = `${50 + opponent.roadPosition}px`;
+                
+                // Make opponents move side to side on the winding road
+                const trackOffset = Math.sin((opponent.progress + opponent.roadPosition) * 0.01) * 12;
                 opponent.position = 35 + trackOffset;
                 opponent.element.style.left = `${opponent.position}%`;
-                
-                // Move opponents forward
-                const verticalPos = 100 + (opponent.progress * 500) % 600;
-                opponent.element.style.bottom = `${verticalPos}px`;
             });
         }
 
         function updateRaceProgress() {
             if (!gameState.raceStarted || gameState.raceFinished) return;
             
-            // Increase speed gradually
-            gameState.speed = Math.min(gameState.speed + 0.2, 120);
+            // Increase speed gradually up to a maximum
+            gameState.speed = Math.min(gameState.speed + 0.1, 140);
             
-            // Update track progress
-            gameState.trackProgress += gameState.speed * 0.0005;
-            if (gameState.trackProgress >= 1) {
-                gameState.lap++;
-                gameState.trackProgress = 0;
+            // Update distance and track progress
+            gameState.distance += gameState.speed * 0.02;
+            gameState.trackProgress = (gameState.distance % 1000) / 1000;
+            
+            // Update laps
+            const newLap = Math.floor(gameState.distance / 1000) + 1;
+            if (newLap !== gameState.lap) {
+                gameState.lap = newLap;
                 
                 if (gameState.lap > gameState.totalLaps) {
                     finishRace();
@@ -703,6 +741,50 @@
             gameState.time += 0.1;
             
             updateDisplay();
+            updateRoadScroll();
+        }
+
+        function checkCollisions() {
+            if (!gameState.raceStarted || gameState.raceFinished) return;
+            
+            const carRect = playerCar.getBoundingClientRect();
+            
+            gameState.opponents.forEach((opponent, index) => {
+                const opponentRect = opponent.element.getBoundingClientRect();
+                
+                // Check if opponent is near player's vertical position
+                if (Math.abs(opponentRect.bottom - carRect.bottom) < 50) {
+                    if (carRect.left < opponentRect.right &&
+                        carRect.right > opponentRect.left &&
+                        carRect.top < opponentRect.bottom &&
+                        carRect.bottom > opponentRect.top) {
+                        
+                        // Collision - slow down
+                        gameState.speed = Math.max(gameState.speed - 20, 40);
+                        
+                        // Visual feedback
+                        playerCar.style.background = 'linear-gradient(45deg, #ff0000, #cc0000)';
+                        setTimeout(() => {
+                            playerCar.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+                        }, 500);
+                    }
+                }
+            });
+        }
+
+        function calculatePosition() {
+            // Calculate position based on distance
+            let playerDistance = gameState.distance;
+            let aheadCount = 0;
+            
+            gameState.opponents.forEach(opponent => {
+                const opponentDistance = opponent.progress + opponent.roadPosition;
+                if (opponentDistance > playerDistance) {
+                    aheadCount++;
+                }
+            });
+            
+            gameState.position = aheadCount + 1;
         }
 
         function updateDisplay() {
@@ -710,6 +792,7 @@
             speedElement.textContent = Math.floor(gameState.speed);
             lapElement.textContent = `${gameState.lap}/${gameState.totalLaps}`;
             timeElement.textContent = formatTime(gameState.time);
+            distanceElement.textContent = Math.floor(gameState.distance);
             trackProgressElement.style.width = `${(gameState.trackProgress * 100)}%`;
         }
 
@@ -729,24 +812,6 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
-        function calculatePosition() {
-            // Simple position calculation based on progress
-            let playerProgress = gameState.lap + gameState.trackProgress;
-            let aheadCount = 0;
-            
-            gameState.opponents.forEach(opponent => {
-                let opponentLap = Math.floor(opponent.progress * 3) + 1;
-                let opponentProgress = (opponent.progress * 3) % 1;
-                let opponentTotal = opponentLap + opponentProgress;
-                
-                if (opponentTotal > playerProgress) {
-                    aheadCount++;
-                }
-            });
-            
-            gameState.position = aheadCount + 1;
-        }
-
         function finishRace() {
             gameState.raceFinished = true;
             gameState.speed = 0;
@@ -755,6 +820,7 @@
                 // Level complete
                 completePositionElement.textContent = `${gameState.position}${getOrdinalSuffix(gameState.position)}`;
                 completeTimeElement.textContent = formatTime(gameState.time);
+                completeDistanceElement.textContent = Math.floor(gameState.distance);
                 levelCompleteScreen.style.display = 'flex';
             } else {
                 // Game over
@@ -766,10 +832,12 @@
         function startRace() {
             gameState.raceStarted = true;
             gameState.time = 0;
+            gameState.distance = 0;
             gameState.lap = 1;
             gameState.trackProgress = 0;
-            gameState.speed = 0;
+            gameState.speed = 80;
             gameState.position = 1;
+            gameState.roadPosition = 0;
             gameState.boosts = 3;
             boostBtn.innerHTML = `<i class="fas fa-bolt"></i> BOOST (${gameState.boosts})`;
             
@@ -779,21 +847,21 @@
 
         function createEnvironment() {
             // Add trees to the sides
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 30; i++) {
                 const tree = document.createElement('div');
                 tree.className = 'tree';
-                tree.style.left = `${i % 2 === 0 ? 5 : 85}%`;
-                tree.style.bottom = `${i * 100}px`;
-                mountainTrack.appendChild(tree);
+                tree.style.left = `${i % 2 === 0 ? 10 : 80}%`;
+                tree.style.bottom = `${i * 150}px`;
+                document.getElementById('mountainTrack').appendChild(tree);
             }
             
             // Add speed boosts
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 8; i++) {
                 const boost = document.createElement('div');
                 boost.className = 'speed-boost';
-                boost.style.left = `${40 + (i * 5)}%`;
-                boost.style.bottom = `${150 + (i * 200)}px`;
-                mountainTrack.appendChild(boost);
+                boost.style.left = `${40 + (i * 3)}%`;
+                boost.style.bottom = `${200 + (i * 300)}px`;
+                document.getElementById('mountainTrack').appendChild(boost);
             }
         }
 
@@ -801,11 +869,13 @@
             gameState.raceStarted = false;
             gameState.raceFinished = false;
             gameState.time = 0;
+            gameState.distance = 0;
             gameState.lap = 1;
             gameState.trackProgress = 0;
-            gameState.speed = 0;
+            gameState.speed = 80;
             gameState.position = 1;
             gameState.carPosition = 35;
+            gameState.roadPosition = 0;
             gameState.boosts = 3;
             gameState.opponents = [];
             
@@ -814,6 +884,7 @@
             
             updateDisplay();
             updateCarPosition();
+            scrollingRoad.style.transform = 'translateY(0)';
             boostBtn.innerHTML = `<i class="fas fa-bolt"></i> BOOST (${gameState.boosts})`;
             
             gameOverScreen.style.display = 'none';
@@ -865,6 +936,7 @@
             if (gameState.raceStarted && !gameState.raceFinished) {
                 updateRaceProgress();
                 updateOpponents();
+                checkCollisions();
                 calculatePosition();
             }
             
